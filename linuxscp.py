@@ -1,4 +1,3 @@
-import os
 import paramiko
 import tkinter as tk
 import tkinter.filedialog
@@ -64,6 +63,8 @@ class SCP:
         self.btn_browse_files.grid(row=2, column=0, sticky="EW")
         self.btn_send = tk.Button(self.window, text="Enviar para servidor", command=self.send_to_server)
         self.btn_send.grid(row=3, column=0, sticky="EW")
+        self.btn_get = tk.Button(self.window, text="Transferir do servidor", command=self.get_from_server)
+        self.btn_get.grid(row=4, column=0, sticky="EW")
         
         self.file_name = False
 
@@ -71,7 +72,7 @@ class SCP:
         self.file = tk.filedialog.askopenfile(parent=self.window,mode='rb',title='Procurar arquivo')
         if self.file:
             self.file_name = tk.Label(self.window, text=self.file.name)
-            self.file_name.grid(row=4, column=0)
+            self.file_name.grid(row=5, column=0)
 
     def send_to_server(self):
         if self.file_name and self.server_directory.get().strip() != '':
@@ -85,6 +86,18 @@ class SCP:
         if self.file_name:
             self.file_name.destroy()
             self.file_name = False
+        self.server_directory.delete(0, 'end')
+
+    def get_from_server(self):
+        self.directory = tk.filedialog.askdirectory(parent=self.window, title="Escolher diretorio")
+        stdin, stdout, stderr = client.exec_command(f'ls {"/".join(self.server_directory.get().split("/")[:-1])}')
+        if self.server_directory.get().strip() != '' and f'{self.server_directory.get().split("/")[-1]}\n' in stdout.readlines():
+            ftp_client = client.open_sftp()
+            ftp_client.get(f'{self.server_directory.get()}', f'{self.directory}/{self.server_directory.get().split("/")[-1]}')
+            ftp_client.close()
+            tk.messagebox.showinfo('Sucesso', 'Arquivo transferido', parent=self.window)
+        else:
+            tk.messagebox.showerror('Erro', 'Nao foi possivel transferir o arquivo', parent=self.window)
         self.server_directory.delete(0, 'end')
 
     def close(self):
